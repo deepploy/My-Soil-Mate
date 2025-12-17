@@ -162,28 +162,34 @@
         // 4. ฟังก์ชันหลัก: ดึงข้อมูลและประมวลผล
         // ------------------------------------------------------------------------
         async function fetchAndAnalyze() {
-            document.getElementById("result").innerText = "กำลังวิเคราะห์...";
-            document.getElementById("sensor-display").innerHTML = "กำลังดึงข้อมูลล่าสุดจาก Google Sheets...";
+        document.getElementById("result").innerText = "กำลังวิเคราะห์...";
+        document.getElementById("sensor-display").innerHTML = "กำลังดึงข้อมูลล่าสุดจาก Google Sheets...";
 
-            try {
-                // ดึงข้อมูล CSV โดยใช้ตัวแปร CSV_URL
-                const response = await fetch(CSV_URL); 
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                const csvText = await response.text();
-                
-                // แปลง CSV เป็น Array of Rows
-                const rows = csvText.trim().split('\n');
-                
-                // แถวสุดท้ายคือข้อมูลล่าสุดจาก IoT (แถวแรกคือ Header)
-                const latestRow = rows[rows.length - 1]; 
-                const values = latestRow.split(',');
+        try {
+            const response = await fetch(CSV_URL); 
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const csvText = await response.text();
+            
+            const rows = csvText.trim().split('\n');
+            
+            // *** แก้ไขการดึงแถว: จัดการ Header และแถวว่าง ***
+            let latestRow = rows[rows.length - 1]; 
+            let values = latestRow.split(',');
 
-                // แปลงค่าเป็นตัวเลข (Float) ตามลำดับที่ AI ต้องการ:
-                // Header ใน Sheet: Timestamp(0), AirTemp(1), AirHum(2), SoilTemp(3), Soil%(4), SoilStatus(5), Light(6), pH(7), N(8), P(9), K(10)
+            // ย้อนกลับไปแถวก่อนหน้าถ้าแถวสุดท้ายว่างเปล่า หรือเป็น Header
+            // ตรวจสอบที่ AirTemp (Index 1) ซึ่งควรเป็นตัวเลข
+            if (isNaN(parseFloat(values[1])) && rows.length > 2) { 
+                latestRow = rows[rows.length - 2]; 
+                values = latestRow.split(',');
+            }
+            // *** สิ้นสุดการจัดการแถว ***
+
+            // *** แก้ไข: การแมปตำแหน่งคอลัมน์ให้ถูกต้องตาม Header ของคุณ ***
+            // Header ใน Sheet: Timestamp(0), AirTemp(1), AirHum(2), SoilTemp(3), Soil%(4), SoilStatus(5), Light(6), pH(7), N(8), P(9), K(10)
             // AI Input Order: Hum_Soil(0), Hum_Air(1), Light(2), N(3), P(4), K(5), pH(6), Temp_Soil(7), Temp_Air(8)
-                const currentData = [
+            const currentData = [
                 parseFloat(values[4]),  // 0. Hum_Soil (Soil%) -> Index [4]
                 parseFloat(values[2]),  // 1. Hum_Air (AirHum) -> Index [2]
                 parseFloat(values[6]),  // 2. Light -> Index [6]
@@ -193,32 +199,45 @@
                 parseFloat(values[7]),  // 6. pH -> Index [7]
                 parseFloat(values[3]),  // 7. Temp_Soil (SoilTemp) -> Index [3]
                 parseFloat(values[1])   // 8. Temp_Air (AirTemp) -> Index [1]
-                ];
+            ];
 
-                // --- ให้ AI พยากรณ์ ---
-                let probabilities = score(currentData);
-                
-                // หาพืชที่มีโอกาสเหมาะสมสูงสุด
-                let maxIndex = probabilities.indexOf(Math.max(...probabilities));
-                let resultCrop = cropNames[maxIndex]; // ใช้ maxIndex ดึงชื่อพืชออกมา
-
-                // --- แสดงผลลัพธ์ ---
-                
-                // 1. แสดงค่า Sensor บนหน้าจอ
-                document.getElementById("sensor-display").innerHTML = `
-                    <div class="data-item"><strong>NPK:</strong> ${currentData[3]}-${currentData[4]}-${currentData[5]} | <strong>pH:</strong> ${currentData[6]}</div>
-                    <div class="data-item"><strong>ความชื้นดิน/อากาศ:</strong> ${currentData[0]}% / ${currentData[1]}%</div>
-                    <div class="data-item"><strong>อุณหภูมิดิน/อากาศ:</strong> ${currentData[7]}°C / ${currentData[8]}°C | <strong>แสง:</strong> ${currentData[2]} LUX</div>
-                `;
-
-                // 2. แสดงผลพยากรณ์
-                document.getElementById("result").innerText = "เหมาะสมที่สุดกับ: " + resultCrop;
-                
-            } catch (error) {
-                console.error("Error fetching or processing data:", error);
-                document.getElementById("result").innerText = "เกิดข้อผิดพลาดในการดึงข้อมูล (โปรดตรวจสอบ CSV URL และการตั้งค่า Publish to web)";
+            // --- ตรวจสอบค่า NaN/ความสมบูรณ์ของข้อมูล ---
+            if (currentData.some(isNaN)) {
+                 // ถ้ายังเป็น NaN แสดงว่าข้อมูลตัวเลขใน Sheet ผิดพลาดจริง ๆ
+                 document.getElementById("sensor-display").innerHTML = `
+                     <strong>ไม่สำเร็จ:</strong> ตรวจพบค่า NaN! ข้อมูลที่ดึงมาคือ: <br> ${latestRow}
+                     <br>
+                     <strong>โปรดตรวจสอบ:</strong> <br>
+                     1. ลบแถวว่างเปล่าทั้งหมดใน Google Sheet<br>
+                     2. ตรวจสอบว่าค่าตัวเลขในคอลัมน์ที่ถูกอ้างถึง (1, 2, 3, 4, 6, 7, 8, 9, 10) เป็นตัวเลขทั้งหมดหรือไม่
+                 `;
+                 document.getElementById("result").innerText = "เกิดข้อผิดพลาด: ข้อมูลที่ดึงจาก Sheet ไม่ใช่ตัวเลข";
+                 return; 
             }
+            
+            // --- ให้ AI พยากรณ์ ---
+            let probabilities = score(currentData);
+            
+            let maxIndex = probabilities.indexOf(Math.max(...probabilities));
+            let resultCrop = cropNames[maxIndex]; 
+
+            // --- แสดงผลลัพธ์ ---
+            
+            // 1. แสดงค่า Sensor บนหน้าจอ
+            document.getElementById("sensor-display").innerHTML = `
+                <div class="data-item"><strong>NPK:</strong> ${currentData[3]}-${currentData[4]}-${currentData[5]} | <strong>pH:</strong> ${currentData[6]}</div>
+                <div class="data-item"><strong>ความชื้นดิน/อากาศ:</strong> ${currentData[0]}% / ${currentData[1]}%</div>
+                <div class="data-item"><strong>อุณหภูมิดิน/อากาศ:</strong> ${currentData[7]}°C / ${currentData[8]}°C | <strong>แสง:</strong> ${currentData[2]} LUX</div>
+            `;
+
+            // 2. แสดงผลพยากรณ์
+            document.getElementById("result").innerText = "เหมาะสมที่สุดกับ: " + resultCrop;
+            
+        } catch (error) {
+            console.error("Error fetching or processing data:", error);
+            document.getElementById("result").innerText = "เกิดข้อผิดพลาดในการดึงข้อมูล (โปรดตรวจสอบ CSV URL และการตั้งค่า Publish to web)";
         }
-    </script>
+    }
+</script>
 </body>
 </html>
