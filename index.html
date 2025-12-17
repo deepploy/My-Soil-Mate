@@ -1,223 +1,223 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>AI Smart Soil Analysis</title>
-    <style>
-        body { font-family: sans-serif; max-width: 600px; margin: 20px auto; padding: 20px; }
-        .box { border: 1px solid #ddd; padding: 20px; border-radius: 8px; background: #f9f9f9; }
-        h2 { color: #2e7d32; }
-        #result { font-weight: bold; font-size: 1.2em; color: #d32f2f; margin-top: 10px;}
-        button { background: #2e7d32; color: white; border: none; padding: 10px 20px; cursor: pointer; font-size: 16px; border-radius: 5px;}
-        button:hover { background: #1b5e20; }
-        .data-item { margin-bottom: 5px; }
-    </style>
+    <title>AI Smart Soil Analysis</title>
+    <style>
+        body { font-family: sans-serif; max-width: 600px; margin: 20px auto; padding: 20px; }
+        .box { border: 1px solid #ddd; padding: 20px; border-radius: 8px; background: #f9f9f9; }
+        h2 { color: #2e7d32; }
+        #result { font-weight: bold; font-size: 1.2em; color: #d32f2f; margin-top: 10px;}
+        button { background: #2e7d32; color: white; border: none; padding: 10px 20px; cursor: pointer; font-size: 16px; border-radius: 5px;}
+        button:hover { background: #1b5e20; }
+        .data-item { margin-bottom: 5px; }
+    </style>
 </head>
-<body onload="fetchAndAnalyze()"> 
-    
-    <div class="box">
-        <h2>🌱 AI วิเคราะห์ดินอัจฉริยะ</h2>
-        <p>กำลังดึงค่าล่าสุดจาก IoT...</p>
-        
-        <div id="sensor-display">
-            รอการเชื่อมต่อ...
-        </div>
+<body onload="fetchAndAnalyze()"> 
+    
+    <div class="box">
+        <h2>🌱 AI วิเคราะห์ดินอัจฉริยะ</h2>
+        <p>กำลังดึงค่าล่าสุดจาก IoT...</p>
+        
+        <div id="sensor-display">
+            รอการเชื่อมต่อ...
+        </div>
 
-        <br>
-        <button onclick="fetchAndAnalyze()">ดึงข้อมูลและวิเคราะห์ใหม่</button>
-        
-        <p>ผลการวิเคราะห์:</p>
-        <div id="result">-</div>
-    </div>
+        <br>
+        <button onclick="fetchAndAnalyze()">ดึงข้อมูลและวิเคราะห์ใหม่</button>
+        
+        <p>ผลการวิเคราะห์:</p>
+        <div id="result">-</div>
+    </div>
 
-    <script>
-        // *** 1. ใส่ CSV URL ที่คุณได้จากการเผยแพร่ Google Sheet ที่นี่ (ต้องมีเครื่องหมาย ' ' ล้อมรอบ) ***
-        const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRSLIE-xwPr0kFUfTKWatQMG6YXAswXoXnXn5jtS9A9T1XlZPMRHhxjok2BkTQAWbX2CuvNhrW9Yimn/pub?output=csv';
+    <script>
+        // *** 1. ใส่ CSV URL ที่คุณได้จากการเผยแพร่ Google Sheet ที่นี่ (ต้องมีเครื่องหมาย ' ' ล้อมรอบ) ***
+        const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRSLIE-xwPr0kFUfTKWatQMG6YXAswXoXnXn5jtS9A9T1XlZPMRHhxjok2BkTQAWbX2CuvNhrW9Yimn/pub?output=csv';
 
-        // 2. ลำดับพืชที่ AI เรียนรู้ (จาก Colab: ['Durian' 'Rice' 'Rubber'])
-        // ลำดับที่ 0: Durian, ลำดับที่ 1: Rice, ลำดับที่ 2: Rubber
-        const cropNames = ['Durian', 'Rice', 'Rubber'];
+        // 2. ลำดับพืชที่ AI เรียนรู้ (จาก Colab: ['Durian' 'Rice' 'Rubber'])
+        // ลำดับที่ 0: Durian, ลำดับที่ 1: Rice, ลำดับที่ 2: Rubber
+        const cropNames = ['Durian', 'Rice', 'Rubber'];
 
-        // ------------------------------------------------------------------------
-        // 3. ฟังก์ชัน AI (โค้ดที่แปลงมาจาก Python โดย m2cgen)
-        // ------------------------------------------------------------------------
-        function score(input) {
-            var var0;
-            if (input[3] <= 92.5) {
-                if (input[5] <= 36.0) {
-                    var0 = [0.0, 0.0, 1.0];
-                } else {
-                    var0 = [0.0, 1.0, 0.0];
-                }
-            } else {
-                var0 = [1.0, 0.0, 0.0];
-            }
-            var var1;
-            if (input[7] <= 25.5) {
-                var1 = [0.0, 1.0, 0.0];
-            } else {
-                if (input[2] <= 6000.0) {
-                    var1 = [1.0, 0.0, 0.0];
-                } else {
-                    var1 = [0.0, 0.0, 1.0];
-                }
-            }
-            var var2;
-            if (input[7] <= 26.0) {
-                var2 = [0.0, 1.0, 0.0];
-            } else {
-                if (input[3] <= 55.0) {
-                    var2 = [0.0, 0.0, 1.0];
-                } else {
-                    var2 = [1.0, 0.0, 0.0];
-                }
-            }
-            var var3;
-            if (input[5] <= 35.0) {
-                var3 = [0.0, 0.0, 1.0];
-            } else {
-                if (input[8] <= 31.0) {
-                    var3 = [0.0, 1.0, 0.0];
-                } else {
-                    var3 = [1.0, 0.0, 0.0];
-                }
-            }
-            var var4;
-            if (input[8] <= 31.5) {
-                var4 = [0.0, 1.0, 0.0];
-            } else {
-                if (input[8] <= 34.0) {
-                    var4 = [1.0, 0.0, 0.0];
-                } else {
-                    var4 = [0.0, 0.0, 1.0];
-                }
-            }
-            var var5;
-            if (input[2] <= 4750.0) {
-                var5 = [1.0, 0.0, 0.0];
-            } else {
-                if (input[5] <= 36.0) {
-                    var5 = [0.0, 0.0, 1.0];
-                } else {
-                    var5 = [0.0, 1.0, 0.0];
-                }
-            }
-            var var6;
-            if (input[5] <= 71.0) {
-                if (input[5] <= 33.5) {
-                    var6 = [0.0, 0.0, 1.0];
-                } else {
-                    var6 = [0.0, 1.0, 0.0];
-                }
-            } else {
-                var6 = [1.0, 0.0, 0.0];
-            }
-            var var7;
-            if (input[0] <= 77.5) {
-                if (input[3] <= 55.0) {
-                    var7 = [0.0, 0.0, 1.0];
-                } else {
-                    var7 = [1.0, 0.0, 0.0];
-                }
-            } else {
-                var7 = [0.0, 1.0, 0.0];
-            }
-            var var8;
-            if (input[2] <= 7000.0) {
-                if (input[5] <= 70.0) {
-                    var8 = [0.0, 1.0, 0.0];
-                } else {
-                    var8 = [1.0, 0.0, 0.0];
-                }
-            } else {
-                var8 = [0.0, 0.0, 1.0];
-            }
-            var var9;
-            if (input[6] <= 5.799999952316284) {
-                var9 = [0.0, 0.0, 1.0];
-            } else {
-                if (input[5] <= 75.0) {
-                    var9 = [0.0, 1.0, 0.0];
-                } else {
-                    var9 = [1.0, 0.0, 0.0];
-                }
-            }
-            return mulVectorNumber(addVectors(addVectors(addVectors(addVectors(addVectors(addVectors(addVectors(addVectors(addVectors(var0, var1), var2), var3), var4), var5), var6), var7), var8), var9), 0.1);
-        }
-        function addVectors(v1, v2) {
-            var result = new Array(v1.length);
-            for (var i = 0; i < v1.length; i++) {
-                result[i] = v1[i] + v2[i];
-            }
-            return result;
-        }
-        function mulVectorNumber(v1, num) {
-            var result = new Array(v1.length);
-            for (var i = 0; i < v1.length; i++) {
-                result[i] = v1[i] * num;
-            }
-            return result;
-        }
+        // ------------------------------------------------------------------------
+        // 3. ฟังก์ชัน AI (โค้ดที่แปลงมาจาก Python โดย m2cgen)
+        // ------------------------------------------------------------------------
+        function score(input) {
+            var var0;
+            if (input[3] <= 92.5) {
+                if (input[5] <= 36.0) {
+                    var0 = [0.0, 0.0, 1.0];
+                } else {
+                    var0 = [0.0, 1.0, 0.0];
+                }
+            } else {
+                var0 = [1.0, 0.0, 0.0];
+            }
+            var var1;
+            if (input[7] <= 25.5) {
+                var1 = [0.0, 1.0, 0.0];
+            } else {
+                if (input[2] <= 6000.0) {
+                    var1 = [1.0, 0.0, 0.0];
+                } else {
+                    var1 = [0.0, 0.0, 1.0];
+                }
+            }
+            var var2;
+            if (input[7] <= 26.0) {
+                var2 = [0.0, 1.0, 0.0];
+            } else {
+                if (input[3] <= 55.0) {
+                    var2 = [0.0, 0.0, 1.0];
+                } else {
+                    var2 = [1.0, 0.0, 0.0];
+                }
+            }
+            var var3;
+            if (input[5] <= 35.0) {
+                var3 = [0.0, 0.0, 1.0];
+            } else {
+                if (input[8] <= 31.0) {
+                    var3 = [0.0, 1.0, 0.0];
+                } else {
+                    var3 = [1.0, 0.0, 0.0];
+                }
+            }
+            var var4;
+            if (input[8] <= 31.5) {
+                var4 = [0.0, 1.0, 0.0];
+            } else {
+                if (input[8] <= 34.0) {
+                    var4 = [1.0, 0.0, 0.0];
+                } else {
+                    var4 = [0.0, 0.0, 1.0];
+                }
+            }
+            var var5;
+            if (input[2] <= 4750.0) {
+                var5 = [1.0, 0.0, 0.0];
+            } else {
+                if (input[5] <= 36.0) {
+                    var5 = [0.0, 0.0, 1.0];
+                } else {
+                    var5 = [0.0, 1.0, 0.0];
+                }
+            }
+            var var6;
+            if (input[5] <= 71.0) {
+                if (input[5] <= 33.5) {
+                    var6 = [0.0, 0.0, 1.0];
+                } else {
+                    var6 = [0.0, 1.0, 0.0];
+                }
+            } else {
+                var6 = [1.0, 0.0, 0.0];
+            }
+            var var7;
+            if (input[0] <= 77.5) {
+                if (input[3] <= 55.0) {
+                    var7 = [0.0, 0.0, 1.0];
+                } else {
+                    var7 = [1.0, 0.0, 0.0];
+                }
+            } else {
+                var7 = [0.0, 1.0, 0.0];
+            }
+            var var8;
+            if (input[2] <= 7000.0) {
+                if (input[5] <= 70.0) {
+                    var8 = [0.0, 1.0, 0.0];
+                } else {
+                    var8 = [1.0, 0.0, 0.0];
+                }
+            } else {
+                var8 = [0.0, 0.0, 1.0];
+            }
+            var var9;
+            if (input[6] <= 5.799999952316284) {
+                var9 = [0.0, 0.0, 1.0];
+            } else {
+                if (input[5] <= 75.0) {
+                    var9 = [0.0, 1.0, 0.0];
+                } else {
+                    var9 = [1.0, 0.0, 0.0];
+                }
+            }
+            return mulVectorNumber(addVectors(addVectors(addVectors(addVectors(addVectors(addVectors(addVectors(addVectors(addVectors(var0, var1), var2), var3), var4), var5), var6), var7), var8), var9), 0.1);
+        }
+        function addVectors(v1, v2) {
+            var result = new Array(v1.length);
+            for (var i = 0; i < v1.length; i++) {
+                result[i] = v1[i] + v2[i];
+            }
+            return result;
+        }
+        function mulVectorNumber(v1, num) {
+            var result = new Array(v1.length);
+            for (var i = 0; i < v1.length; i++) {
+                result[i] = v1[i] * num;
+            }
+            return result;
+        }
 
-        // ------------------------------------------------------------------------
-        // 4. ฟังก์ชันหลัก: ดึงข้อมูลและประมวลผล
-        // ------------------------------------------------------------------------
-        async function fetchAndAnalyze() {
-            document.getElementById("result").innerText = "กำลังวิเคราะห์...";
-            document.getElementById("sensor-display").innerHTML = "กำลังดึงข้อมูลล่าสุดจาก Google Sheets...";
+        // ------------------------------------------------------------------------
+        // 4. ฟังก์ชันหลัก: ดึงข้อมูลและประมวลผล
+        // ------------------------------------------------------------------------
+        async function fetchAndAnalyze() {
+            document.getElementById("result").innerText = "กำลังวิเคราะห์...";
+            document.getElementById("sensor-display").innerHTML = "กำลังดึงข้อมูลล่าสุดจาก Google Sheets...";
 
-            try {
-                // ดึงข้อมูล CSV โดยใช้ตัวแปร CSV_URL
-                const response = await fetch(CSV_URL); 
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                const csvText = await response.text();
-                
-                // แปลง CSV เป็น Array of Rows
-                const rows = csvText.trim().split('\n');
-                
-                // แถวสุดท้ายคือข้อมูลล่าสุดจาก IoT (แถวแรกคือ Header)
-                const latestRow = rows[rows.length - 1]; 
-                const values = latestRow.split(',');
+            try {
+                // ดึงข้อมูล CSV โดยใช้ตัวแปร CSV_URL
+                const response = await fetch(CSV_URL); 
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const csvText = await response.text();
+                
+                // แปลง CSV เป็น Array of Rows
+                const rows = csvText.trim().split('\n');
+                
+                // แถวสุดท้ายคือข้อมูลล่าสุดจาก IoT (แถวแรกคือ Header)
+                const latestRow = rows[rows.length - 1]; 
+                const values = latestRow.split(',');
 
-                // แปลงค่าเป็นตัวเลข (Float) ตามลำดับที่ AI ต้องการ:
-                // Hum_Soil(0), Hum_Air(1), Light(2), N(3), P(4), K(5), pH(6), Temp_Soil(7), Temp_Air(8)
-                const currentData = [
-                    parseFloat(values[0]), // humidity of soil
-                    parseFloat(values[1]), // humidity of air
-                    parseFloat(values[2]), // intensity of light (LUX)
-                    parseFloat(values[3]), // Nitrogen (N)
-                    parseFloat(values[4]), // Phosphorus (P)
-                    parseFloat(values[5]), // Potassium (K)
-                    parseFloat(values[6]), // pH of soil
-                    parseFloat(values[7]), // Temperature of soil
-                    parseFloat(values[8])  // Temperature of Air
-                ];
+                // แปลงค่าเป็นตัวเลข (Float) ตามลำดับที่ AI ต้องการ:
+                // Hum_Soil(0), Hum_Air(1), Light(2), N(3), P(4), K(5), pH(6), Temp_Soil(7), Temp_Air(8)
+                const currentData = [
+                    parseFloat(values[0]), // humidity of soil
+                    parseFloat(values[1]), // humidity of air
+                    parseFloat(values[2]), // intensity of light (LUX)
+                    parseFloat(values[3]), // Nitrogen (N)
+                    parseFloat(values[4]), // Phosphorus (P)
+                    parseFloat(values[5]), // Potassium (K)
+                    parseFloat(values[6]), // pH of soil
+                    parseFloat(values[7]), // Temperature of soil
+                    parseFloat(values[8])  // Temperature of Air
+                ];
 
-                // --- ให้ AI พยากรณ์ ---
-                let probabilities = score(currentData);
-                
-                // หาพืชที่มีโอกาสเหมาะสมสูงสุด
-                let maxIndex = probabilities.indexOf(Math.max(...probabilities));
-                let resultCrop = cropNames[maxIndex]; // ใช้ maxIndex ดึงชื่อพืชออกมา
+                // --- ให้ AI พยากรณ์ ---
+                let probabilities = score(currentData);
+                
+                // หาพืชที่มีโอกาสเหมาะสมสูงสุด
+                let maxIndex = probabilities.indexOf(Math.max(...probabilities));
+                let resultCrop = cropNames[maxIndex]; // ใช้ maxIndex ดึงชื่อพืชออกมา
 
-                // --- แสดงผลลัพธ์ ---
-                
-                // 1. แสดงค่า Sensor บนหน้าจอ
-                document.getElementById("sensor-display").innerHTML = `
-                    <div class="data-item"><strong>NPK:</strong> ${currentData[3]}-${currentData[4]}-${currentData[5]} | <strong>pH:</strong> ${currentData[6]}</div>
-                    <div class="data-item"><strong>ความชื้นดิน/อากาศ:</strong> ${currentData[0]}% / ${currentData[1]}%</div>
-                    <div class="data-item"><strong>อุณหภูมิดิน/อากาศ:</strong> ${currentData[7]}°C / ${currentData[8]}°C | <strong>แสง:</strong> ${currentData[2]} LUX</div>
-                `;
+                // --- แสดงผลลัพธ์ ---
+                
+                // 1. แสดงค่า Sensor บนหน้าจอ
+                document.getElementById("sensor-display").innerHTML = `
+                    <div class="data-item"><strong>NPK:</strong> ${currentData[3]}-${currentData[4]}-${currentData[5]} | <strong>pH:</strong> ${currentData[6]}</div>
+                    <div class="data-item"><strong>ความชื้นดิน/อากาศ:</strong> ${currentData[0]}% / ${currentData[1]}%</div>
+                    <div class="data-item"><strong>อุณหภูมิดิน/อากาศ:</strong> ${currentData[7]}°C / ${currentData[8]}°C | <strong>แสง:</strong> ${currentData[2]} LUX</div>
+                `;
 
-                // 2. แสดงผลพยากรณ์
-                document.getElementById("result").innerText = "เหมาะสมที่สุดกับ: " + resultCrop;
-                
-            } catch (error) {
-                console.error("Error fetching or processing data:", error);
-                document.getElementById("result").innerText = "เกิดข้อผิดพลาดในการดึงข้อมูล (โปรดตรวจสอบ CSV URL และการตั้งค่า Publish to web)";
-            }
-        }
-    </script>
+                // 2. แสดงผลพยากรณ์
+                document.getElementById("result").innerText = "เหมาะสมที่สุดกับ: " + resultCrop;
+                
+            } catch (error) {
+                console.error("Error fetching or processing data:", error);
+                document.getElementById("result").innerText = "เกิดข้อผิดพลาดในการดึงข้อมูล (โปรดตรวจสอบ CSV URL และการตั้งค่า Publish to web)";
+            }
+        }
+    </script>
 </body>
 </html>
