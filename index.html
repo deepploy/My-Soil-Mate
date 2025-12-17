@@ -1,1 +1,191 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AI Smart Soil Analysis</title>
+    <style>
+        body { font-family: sans-serif; max-width: 600px; margin: 20px auto; padding: 20px; }
+        .box { border: 1px solid #ddd; padding: 20px; border-radius: 8px; background: #f9f9f9; }
+        h2 { color: #2e7d32; }
+        #result { font-weight: bold; font-size: 1.2em; color: #d32f2f; margin-top: 10px;}
+        button { background: #2e7d32; color: white; border: none; padding: 10px 20px; cursor: pointer; font-size: 16px; border-radius: 5px;}
+        button:hover { background: #1b5e20; }
+    </style>
+</head>
+<body>
 
+    <div class="box">
+        <h2>🌱 AI วิเคราะห์ดินอัจฉริยะ</h2>
+        <p>กำลังดึงค่าจากอุปกรณ์ IoT...</p>
+        
+        <div id="sensor-display">
+            รอข้อมูล...
+        </div>
+
+        <br>
+        <button onclick="analyzeSoil()">วิเคราะห์ผลทันที</button>
+        
+        <p>ผลการวิเคราะห์:</p>
+        <div id="result">-</div>
+    </div>
+
+    <script>
+        // ---------------------------------------------------------
+        // ส่วนที่ 1: วางโค้ด AI ที่ได้จาก Google Colab ตรงนี้!
+        // ---------------------------------------------------------
+        
+        function score(input) {
+            // function score(input) {
+    var var0;
+    if (input[3] <= 92.5) {
+        if (input[5] <= 36.0) {
+            var0 = [0.0, 0.0, 1.0];
+        } else {
+            var0 = [0.0, 1.0, 0.0];
+        }
+    } else {
+        var0 = [1.0, 0.0, 0.0];
+    }
+    var var1;
+    if (input[7] <= 25.5) {
+        var1 = [0.0, 1.0, 0.0];
+    } else {
+        if (input[2] <= 6000.0) {
+            var1 = [1.0, 0.0, 0.0];
+        } else {
+            var1 = [0.0, 0.0, 1.0];
+        }
+    }
+    var var2;
+    if (input[7] <= 26.0) {
+        var2 = [0.0, 1.0, 0.0];
+    } else {
+        if (input[3] <= 55.0) {
+            var2 = [0.0, 0.0, 1.0];
+        } else {
+            var2 = [1.0, 0.0, 0.0];
+        }
+    }
+    var var3;
+    if (input[5] <= 35.0) {
+        var3 = [0.0, 0.0, 1.0];
+    } else {
+        if (input[8] <= 31.0) {
+            var3 = [0.0, 1.0, 0.0];
+        } else {
+            var3 = [1.0, 0.0, 0.0];
+        }
+    }
+    var var4;
+    if (input[8] <= 31.5) {
+        var4 = [0.0, 1.0, 0.0];
+    } else {
+        if (input[8] <= 34.0) {
+            var4 = [1.0, 0.0, 0.0];
+        } else {
+            var4 = [0.0, 0.0, 1.0];
+        }
+    }
+    var var5;
+    if (input[2] <= 4750.0) {
+        var5 = [1.0, 0.0, 0.0];
+    } else {
+        if (input[5] <= 36.0) {
+            var5 = [0.0, 0.0, 1.0];
+        } else {
+            var5 = [0.0, 1.0, 0.0];
+        }
+    }
+    var var6;
+    if (input[5] <= 71.0) {
+        if (input[5] <= 33.5) {
+            var6 = [0.0, 0.0, 1.0];
+        } else {
+            var6 = [0.0, 1.0, 0.0];
+        }
+    } else {
+        var6 = [1.0, 0.0, 0.0];
+    }
+    var var7;
+    if (input[0] <= 77.5) {
+        if (input[3] <= 55.0) {
+            var7 = [0.0, 0.0, 1.0];
+        } else {
+            var7 = [1.0, 0.0, 0.0];
+        }
+    } else {
+        var7 = [0.0, 1.0, 0.0];
+    }
+    var var8;
+    if (input[2] <= 7000.0) {
+        if (input[5] <= 70.0) {
+            var8 = [0.0, 1.0, 0.0];
+        } else {
+            var8 = [1.0, 0.0, 0.0];
+        }
+    } else {
+        var8 = [0.0, 0.0, 1.0];
+    }
+    var var9;
+    if (input[6] <= 5.799999952316284) {
+        var9 = [0.0, 0.0, 1.0];
+    } else {
+        if (input[5] <= 75.0) {
+            var9 = [0.0, 1.0, 0.0];
+        } else {
+            var9 = [1.0, 0.0, 0.0];
+        }
+    }
+    return mulVectorNumber(addVectors(addVectors(addVectors(addVectors(addVectors(addVectors(addVectors(addVectors(addVectors(var0, var1), var2), var3), var4), var5), var6), var7), var8), var9), 0.1);
+}
+function addVectors(v1, v2) {
+    var result = new Array(v1.length);
+    for (var i = 0; i < v1.length; i++) {
+        result[i] = v1[i] + v2[i];
+    }
+    return result;
+}
+function mulVectorNumber(v1, num) {
+    var result = new Array(v1.length);
+    for (var i = 0; i < v1.length; i++) {
+        result[i] = v1[i] * num;
+    }
+    return result;
+}
+
+==============================
+ลำดับพืชที่ AI เรียนรู้คือ: ['Durian' 'Rice' 'Rubber']
+
+            return [0, 0, 0]; // (ตัวอย่าง)
+        }
+
+        // ---------------------------------------------------------
+        // ส่วนที่ 2: ตั้งค่าชื่อพืช (ดูจาก Colab ว่าเรียงยังไง)
+        // ---------------------------------------------------------
+        const cropNames = ['Durian', 'Rice', 'Rubber']; // แก้ให้ตรงกับ Colab
+
+        // ---------------------------------------------------------
+        // ส่วนที่ 3: การทำงาน
+        // ---------------------------------------------------------
+        
+        // ตัวแปรเก็บค่า (จำลองค่าก่อน เดี๋ยวเราจะดึงจริงจาก Sheet ทีหลัง)
+        // เรียงตาม: Hum_Soil, Hum_Air, Light, N, P, K, pH, Temp_Soil, Temp_Air
+        let currentData = [75, 60, 4000, 85, 20, 100, 6.0, 28, 32]; 
+
+        function analyzeSoil() {
+            // เรียกใช้ AI
+            let probabilities = score(currentData);
+            
+            // หาค่าที่มากที่สุด
+            let maxIndex = probabilities.indexOf(Math.max(...probabilities));
+            let resultCrop = cropNames[maxIndex];
+
+            document.getElementById("result").innerText = "เหมาะสมที่สุดกับ: " + resultCrop;
+            
+            // แสดงค่า Sensor บนหน้าจอด้วย
+            document.getElementById("sensor-display").innerText = 
+                "ความชื้นดิน: " + currentData[0] + "% | NPK: " + currentData[3] + "-" + currentData[4] + "-" + currentData[5];
+        }
+
+    </script>
+</body>
+</html>
