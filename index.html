@@ -181,17 +181,18 @@
                 const values = latestRow.split(',');
 
                 // แปลงค่าเป็นตัวเลข (Float) ตามลำดับที่ AI ต้องการ:
-                // Hum_Soil(0), Hum_Air(1), Light(2), N(3), P(4), K(5), pH(6), Temp_Soil(7), Temp_Air(8)
+                // Header ใน Sheet: Timestamp(0), AirTemp(1), AirHum(2), SoilTemp(3), Soil%(4), SoilStatus(5), Light(6), pH(7), N(8), P(9), K(10)
+            // AI Input Order: Hum_Soil(0), Hum_Air(1), Light(2), N(3), P(4), K(5), pH(6), Temp_Soil(7), Temp_Air(8)
                 const currentData = [
-                    parseFloat(values[0]), // humidity of soil
-                    parseFloat(values[1]), // humidity of air
-                    parseFloat(values[2]), // intensity of light (LUX)
-                    parseFloat(values[3]), // Nitrogen (N)
-                    parseFloat(values[4]), // Phosphorus (P)
-                    parseFloat(values[5]), // Potassium (K)
-                    parseFloat(values[6]), // pH of soil
-                    parseFloat(values[7]), // Temperature of soil
-                    parseFloat(values[8])  // Temperature of Air
+                parseFloat(values[4]),  // 0. Hum_Soil (Soil%) -> Index [4]
+                parseFloat(values[2]),  // 1. Hum_Air (AirHum) -> Index [2]
+                parseFloat(values[6]),  // 2. Light -> Index [6]
+                parseFloat(values[8]),  // 3. N -> Index [8]
+                parseFloat(values[9]),  // 4. P -> Index [9]
+                parseFloat(values[10]), // 5. K -> Index [10]
+                parseFloat(values[7]),  // 6. pH -> Index [7]
+                parseFloat(values[3]),  // 7. Temp_Soil (SoilTemp) -> Index [3]
+                parseFloat(values[1])   // 8. Temp_Air (AirTemp) -> Index [1]
                 ];
 
                 // --- ให้ AI พยากรณ์ ---
