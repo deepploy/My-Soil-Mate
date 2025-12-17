@@ -3,7 +3,13 @@
 <head>
     <title>AI Smart Soil Analysis</title>
     <style>
-        /* ... (CSS Styles อยู่ที่เดิม) ... */
+        body { font-family: sans-serif; max-width: 600px; margin: 20px auto; padding: 20px; }
+        .box { border: 1px solid #ddd; padding: 20px; border-radius: 8px; background: #f9f9f9; }
+        h2 { color: #2e7d32; }
+        #result { font-weight: bold; font-size: 1.2em; color: #d32f2f; margin-top: 10px;}
+        button { background: #2e7d32; color: white; border: none; padding: 10px 20px; cursor: pointer; font-size: 16px; border-radius: 5px;}
+        button:hover { background: #1b5e20; }
+        .data-item { margin-bottom: 5px; }
     </style>
 </head>
 <body onload="fetchAndAnalyze()"> 
@@ -24,13 +30,15 @@
     </div>
 
     <script>
-        // 1. ใส่ CSV URL ที่คุณได้จากการเผยแพร่ Google Sheet ที่นี่
+        // *** 1. ใส่ CSV URL ที่คุณได้จากการเผยแพร่ Google Sheet ที่นี่ (ต้องมีเครื่องหมาย ' ' ล้อมรอบ) ***
         const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRSLIE-xwPr0kFUfTKWatQMG6YXAswXoXnXn5jtS9A9T1XlZPMRHhxjok2BkTQAWbX2CuvNhrW9Yimn/pub?output=csv';
 
-        // 2. ลำดับพืชที่ AI เรียนรู้ (จาก Colab)
+        // 2. ลำดับพืชที่ AI เรียนรู้ (จาก Colab: ['Durian' 'Rice' 'Rubber'])
+        // ลำดับที่ 0: Durian, ลำดับที่ 1: Rice, ลำดับที่ 2: Rubber
         const cropNames = ['Durian', 'Rice', 'Rubber'];
 
-        // 3. ฟังก์ชัน AI (โค้ด score, addVectors, mulVectorNumber อยู่ที่เดิม)
+        // ------------------------------------------------------------------------
+        // 3. ฟังก์ชัน AI (โค้ดที่แปลงมาจาก Python โดย m2cgen)
         // ------------------------------------------------------------------------
         function score(input) {
             var var0;
@@ -149,78 +157,67 @@
             }
             return result;
         }
-        // ------------------------------------------------------------------------
 
+        // ------------------------------------------------------------------------
         // 4. ฟังก์ชันหลัก: ดึงข้อมูลและประมวลผล
         // ------------------------------------------------------------------------
-       async function fetchAndAnalyze() {
-        document.getElementById("result").innerText = "กำลังวิเคราะห์...";
-        document.getElementById("sensor-display").innerHTML = "กำลังดึงข้อมูลล่าสุดจาก Google Sheets...";
+        async function fetchAndAnalyze() {
+            document.getElementById("result").innerText = "กำลังวิเคราะห์...";
+            document.getElementById("sensor-display").innerHTML = "กำลังดึงข้อมูลล่าสุดจาก Google Sheets...";
 
-        try {
-            const response = await fetch(CSV_URL); 
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+            try {
+                // ดึงข้อมูล CSV โดยใช้ตัวแปร CSV_URL
+                const response = await fetch(CSV_URL); 
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const csvText = await response.text();
+                
+                // แปลง CSV เป็น Array of Rows
+                const rows = csvText.trim().split('\n');
+                
+                // แถวสุดท้ายคือข้อมูลล่าสุดจาก IoT (แถวแรกคือ Header)
+                const latestRow = rows[rows.length - 1]; 
+                const values = latestRow.split(',');
+
+                // แปลงค่าเป็นตัวเลข (Float) ตามลำดับที่ AI ต้องการ:
+                // Hum_Soil(0), Hum_Air(1), Light(2), N(3), P(4), K(5), pH(6), Temp_Soil(7), Temp_Air(8)
+                const currentData = [
+                    parseFloat(values[0]), // humidity of soil
+                    parseFloat(values[1]), // humidity of air
+                    parseFloat(values[2]), // intensity of light (LUX)
+                    parseFloat(values[3]), // Nitrogen (N)
+                    parseFloat(values[4]), // Phosphorus (P)
+                    parseFloat(values[5]), // Potassium (K)
+                    parseFloat(values[6]), // pH of soil
+                    parseFloat(values[7]), // Temperature of soil
+                    parseFloat(values[8])  // Temperature of Air
+                ];
+
+                // --- ให้ AI พยากรณ์ ---
+                let probabilities = score(currentData);
+                
+                // หาพืชที่มีโอกาสเหมาะสมสูงสุด
+                let maxIndex = probabilities.indexOf(Math.max(...probabilities));
+                let resultCrop = cropNames[maxIndex]; // ใช้ maxIndex ดึงชื่อพืชออกมา
+
+                // --- แสดงผลลัพธ์ ---
+                
+                // 1. แสดงค่า Sensor บนหน้าจอ
+                document.getElementById("sensor-display").innerHTML = `
+                    <div class="data-item"><strong>NPK:</strong> ${currentData[3]}-${currentData[4]}-${currentData[5]} | <strong>pH:</strong> ${currentData[6]}</div>
+                    <div class="data-item"><strong>ความชื้นดิน/อากาศ:</strong> ${currentData[0]}% / ${currentData[1]}%</div>
+                    <div class="data-item"><strong>อุณหภูมิดิน/อากาศ:</strong> ${currentData[7]}°C / ${currentData[8]}°C | <strong>แสง:</strong> ${currentData[2]} LUX</div>
+                `;
+
+                // 2. แสดงผลพยากรณ์
+                document.getElementById("result").innerText = "เหมาะสมที่สุดกับ: " + resultCrop;
+                
+            } catch (error) {
+                console.error("Error fetching or processing data:", error);
+                document.getElementById("result").innerText = "เกิดข้อผิดพลาดในการดึงข้อมูล (โปรดตรวจสอบ CSV URL และการตั้งค่า Publish to web)";
             }
-            const csvText = await response.text();
-            
-            const rows = csvText.trim().split('\n');
-            
-            // 1. ดึงแถวข้อมูลล่าสุด (แก้ปัญหาแถวว่างที่ส่วนท้าย)
-            let latestRow = rows[rows.length - 1]; 
-            // ตรวจสอบ: ถ้าแถวสุดท้ายว่างเปล่าหรือเป็น Header ให้ย้อนกลับไปแถวก่อนหน้า
-            if (latestRow.split(',').length < 10 && rows.length > 2) { 
-                latestRow = rows[rows.length - 2]; 
-            }
-            let values = latestRow.split(',');
-
-            // *** แก้ไข: การแมปตำแหน่งคอลัมน์ให้ถูกต้องตามรูปแบบข้อมูล 12 องค์ประกอบ ***
-            // Timestamp มี Comma ภายใน ทำให้เกิด 2 คอลัมน์แรก (Index 0, 1) และเลื่อน Index ทั้งหมด
-            // Header ใน Sheet: Timestamp(0,1), AirTemp(2), AirHum(3), SoilTemp(4), Soil%(5), SoilStatus(6), Light(7), pH(8), N(9), P(10), K(11)
-            // AI Input Order: Hum_Soil(0), Hum_Air(1), Light(2), N(3), P(4), K(5), pH(6), Temp_Soil(7), Temp_Air(8)
-            const currentData = [
-                parseFloat(values[5]),  // 0. Hum_Soil (Soil%) -> Index [5]
-                parseFloat(values[3]),  // 1. Hum_Air (AirHum) -> Index [3]
-                parseFloat(values[7]),  // 2. Light -> Index [7]
-                parseFloat(values[9]),  // 3. N -> Index [9]
-                parseFloat(values[10]), // 4. P -> Index [10]
-                parseFloat(values[11]), // 5. K -> Index [11]
-                parseFloat(values[8]),  // 6. pH -> Index [8]
-                parseFloat(values[4]),  // 7. Temp_Soil (SoilTemp) -> Index [4]
-                parseFloat(values[2])   // 8. Temp_Air (AirTemp) -> Index [2]
-            ];
-
-            // --- ตรวจสอบค่า NaN/ความสมบูรณ์ของข้อมูล (ถ้ายังผิดแสดงว่าข้อมูลใน Sheet ผิดพลาดจริง) ---
-            if (currentData.some(isNaN)) {
-                 document.getElementById("sensor-display").innerHTML = `
-                     <strong>ไม่สำเร็จ:</strong> ตรวจพบค่า NaN! ข้อมูลที่ดึงมาคือ: <br> ${latestRow}
-                     <br>
-                     <strong>โปรดตรวจสอบ:</strong> <br>
-                     - ข้อมูลใน Google Sheet (แถวที่ถูกดึง) ต้องเป็นตัวเลขทั้งหมดในคอลัมน์ที่ถูกใช้ (ยกเว้น Timestamp และ SoilStatus)
-                 `;
-                 document.getElementById("result").innerText = "เกิดข้อผิดพลาด: ข้อมูลที่ดึงจาก Sheet ไม่ใช่ตัวเลข";
-                 return; 
-            }
-            
-            // --- ให้ AI พยากรณ์ และ แสดงผลลัพธ์ (โค้ดส่วนนี้ถูกต้องแล้ว) ---
-            let probabilities = score(currentData);
-            
-            let maxIndex = probabilities.indexOf(Math.max(...probabilities));
-            let resultCrop = cropNames[maxIndex]; 
-
-            document.getElementById("sensor-display").innerHTML = `
-                <div class="data-item"><strong>NPK:</strong> ${currentData[3]}-${currentData[4]}-${currentData[5]} | <strong>pH:</strong> ${currentData[6]}</div>
-                <div class="data-item"><strong>ความชื้นดิน/อากาศ:</strong> ${currentData[0]}% / ${currentData[1]}%</div>
-                <div class="data-item"><strong>อุณหภูมิดิน/อากาศ:</strong> ${currentData[7]}°C / ${currentData[8]}°C | <strong>แสง:</strong> ${currentData[2]} LUX</div>
-            `;
-
-            document.getElementById("result").innerText = "เหมาะสมที่สุดกับ: " + resultCrop;
-            
-        } catch (error) {
-            console.error("Error fetching or processing data:", error);
-            document.getElementById("result").innerText = "เกิดข้อผิดพลาดในการดึงข้อมูล (โปรดตรวจสอบ CSV URL และการตั้งค่า Publish to web)";
         }
-    }
-</script>
+    </script>
 </body>
 </html>
